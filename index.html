@@ -3,126 +3,78 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>FinBuddy – Single File React App</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <script src="https://unpkg.com/recharts/umd/Recharts.min.js"></script>
+    <title>FinBuddy – Minimal (No JSX/Babel)</title>
     <style>
-      body { background: linear-gradient(135deg, #f8fafc, #eef2ff); min-height: 100vh; }
+      body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 0; background: #f8fafc; }
+      .wrap { max-width: 900px; margin: 24px auto 80px; padding: 0 12px; }
+      .card { background:#fff; border:1px solid #e5e7eb; border-radius:16px; box-shadow:0 1px 6px rgba(0,0,0,.05); }
+      .card h2 { margin:0; padding:16px; font-size:16px; border-bottom:1px solid #e5e7eb;}
+      .card .content { padding: 12px; height: 320px; }
+      nav { position: fixed; left: 0; right: 0; bottom: 0; background: rgba(255,255,255,.9); border-top:1px solid #e5e7eb; backdrop-filter: blur(6px); }
+      nav .inner { max-width: 900px; margin: 0 auto; padding: 8px 12px; display:flex; gap:12px; }
+      button { appearance:none; border:1px solid #e5e7eb; background:#fff; padding:8px 12px; border-radius:10px; }
+      button.active { color:#4f46e5; border-color:#4f46e5; }
+      .muted { color:#6b7280; }
     </style>
+    <!-- React/ReactDOM (jsDelivr CDN) -->
+    <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js"></script>
+    <!-- Recharts (UMD) -->
+    <script src="https://cdn.jsdelivr.net/npm/recharts@2/umd/Recharts.min.js"></script>
   </head>
   <body>
-    <div id="root"></div>
-    <script type="text/babel" data-presets="env,react">
-      const { useState, useMemo } = React;
-      const { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, Legend, PieChart, Pie, Cell, BarChart, Bar, RadialBarChart, RadialBar } = window.Recharts;
+    <div class="wrap">
+      <h1>FinBuddy <span class="muted">– Minimal</span></h1>
+      <div id="root"></div>
+    </div>
+    <nav>
+      <div class="inner">
+        <span class="muted">If you can see this UI, the page is rendering correctly.</span>
+      </div>
+    </nav>
 
-      const COLORS = ["#10b981", "#6366f1", "#f59e0b", "#ef4444", "#14b8a6", "#8b5cf6"];
-      function currency(n) {
-        return new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(n);
-      }
+    <script>
+      (function () {
+        var e = React.createElement;
+        var Recharts = window.Recharts;
+        if (!Recharts) {
+          document.getElementById('root').innerHTML = '<p style="color:#b91c1c">Error: Recharts failed to load. Check your network/CDN access.</p>';
+          return;
+        }
+        var data = [
+          { month: 'Jun', inflow: 32000, outflow: 22000 },
+          { month: 'Jul', inflow: 34000, outflow: 23000 },
+          { month: 'Aug', inflow: 35500, outflow: 24000 },
+          { month: 'Sep', inflow: 36000, outflow: 26500 },
+          { month: 'Oct', inflow: 38000, outflow: 27100 },
+          { month: 'Nov', inflow: 40000, outflow: 28600 }
+        ];
 
-      const spendingByCategory = [
-        { name: "Food", value: 5400 },
-        { name: "Transport", value: 1900 },
-        { name: "Shopping", value: 3500 },
-        { name: "Entertainment", value: 2400 },
-        { name: "Bills", value: 4100 },
-      ];
+        function ChartCard() {
+          return e('div', { className: 'card' },
+            e('h2', null, 'Cashflow (6 months)'),
+            e('div', { className: 'content' },
+              e(Recharts.ResponsiveContainer, { width: '100%', height: '100%' },
+                e(Recharts.LineChart, { data: data },
+                  e(Recharts.XAxis, { dataKey: 'month' }),
+                  e(Recharts.YAxis, null),
+                  e(Recharts.Tooltip, { formatter: function(v){ return new Intl.NumberFormat('en-IN', { style:'currency', currency:'INR', maximumFractionDigits:0 }).format(v);} }),
+                  e(Recharts.Legend, null),
+                  e(Recharts.Line, { type: 'monotone', dataKey: 'inflow', stroke: '#10b981', strokeWidth: 2, dot: false }),
+                  e(Recharts.Line, { type: 'monotone', dataKey: 'outflow', stroke: '#ef4444', strokeWidth: 2, dot: false })
+                )
+              )
+            )
+          );
+        }
 
-      const monthlyCashflow = [
-        { month: "Jun", inflow: 32000, outflow: 22000 },
-        { month: "Jul", inflow: 34000, outflow: 23000 },
-        { month: "Aug", inflow: 35500, outflow: 24000 },
-        { month: "Sep", inflow: 36000, outflow: 26500 },
-        { month: "Oct", inflow: 38000, outflow: 27100 },
-        { month: "Nov", inflow: 40000, outflow: 28600 },
-      ];
+        function App() {
+          return e(ChartCard);
+        }
 
-      const goalTemplates = [
-        { id: "trip", label: "Goa Trip", target: 15000, saved: 6200 },
-        { id: "iphone", label: "New Phone", target: 60000, saved: 18000 },
-        { id: "course", label: "Data Course", target: 12000, saved: 7200 },
-      ];
-
-      const NAV = ["Home","Money","Goals"];
-      function SectionTitle({ title }) {
-        return <h2 className="text-xl font-semibold my-2">{title}</h2>;
-      }
-
-      function Dashboard() {
-        const netSavings = useMemo(() => {
-          let totalIn = monthlyCashflow.reduce((a, c) => a + c.inflow, 0);
-          let totalOut = monthlyCashflow.reduce((a, c) => a + c.outflow, 0);
-          return totalIn - totalOut;
-        }, []);
-        return (
-          <div className="space-y-6">
-            <SectionTitle title="FinBuddy Overview" />
-            <div className="rounded-2xl border bg-white shadow-sm">
-              <div className="px-4 pt-4 pb-2 font-semibold">Cashflow (6 months)</div>
-              <div className="px-2 pb-4 h-56">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={monthlyCashflow}>
-                    <XAxis dataKey="month" />
-                    <YAxis />
-                    <Tooltip formatter={(v)=>currency(v)} />
-                    <Legend />
-                    <Line type="monotone" dataKey="inflow" stroke="#10b981" strokeWidth={2} dot={false} />
-                    <Line type="monotone" dataKey="outflow" stroke="#ef4444" strokeWidth={2} dot={false} />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-            <div className="rounded-2xl border bg-white shadow-sm">
-              <div className="px-4 pt-4 pb-2 font-semibold">Spending by Category</div>
-              <div className="px-2 pb-4 h-60">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie data={spendingByCategory} dataKey="value" nameKey="name" innerRadius={60} outerRadius={100}>
-                      {spendingByCategory.map((_, i) => (
-                        <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip formatter={(v)=>currency(v)} />
-                    <Legend />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-            <div className="rounded-2xl border bg-white shadow-sm p-4">
-              <SectionTitle title="Goals" />
-              <ResponsiveContainer width="100%" height={300}>
-                <RadialBarChart innerRadius="20%" outerRadius="90%" data={goalTemplates.map(g=>({name:g.label,value:Math.round((g.saved/g.target)*100)}))}>
-                  <RadialBar minAngle={15} clockWise dataKey="value" />
-                  <Legend />
-                  <Tooltip formatter={function(v){ return v + '%'; }} />
-                </RadialBarChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-        );
-      }
-
-      function FinBuddyApp() {
-        const [tab, setTab] = useState("Home");
-        return (
-          <div className="max-w-4xl mx-auto px-4 py-6">
-            <h1 className="text-2xl font-bold mb-4">FinBuddy</h1>
-            <div>{tab==="Home" && <Dashboard />}</div>
-            <nav className="fixed bottom-3 left-1/2 -translate-x-1/2 bg-white border rounded-2xl shadow-lg flex">
-              {NAV.map(n=>
-                <button key={n} onClick={()=>setTab(n)} className={"px-3 py-2 "+(tab===n?"text-indigo-600 font-semibold":"text-slate-600")}>{n}</button>
-              )}
-            </nav>
-          </div>
-        );
-      }
-
-      const root = ReactDOM.createRoot(document.getElementById('root'));
-      root.render(<FinBuddyApp />);
+        var root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(e(App));
+      })();
     </script>
   </body>
 </html>
