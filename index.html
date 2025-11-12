@@ -4,14 +4,10 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>FinBuddy – Single File React App</title>
-    <!-- Tailwind CSS (CDN) -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- React 18 (UMD) -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-    <!-- Babel (so we can write JSX inline) -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <!-- Recharts (UMD) -->
     <script src="https://unpkg.com/recharts/umd/Recharts.min.js"></script>
     <style>
       body { background: linear-gradient(135deg, #f8fafc, #eef2ff); min-height: 100vh; }
@@ -19,19 +15,15 @@
   </head>
   <body>
     <div id="root"></div>
-
-    <!-- Use Babel with env+react presets so modern syntax is transpiled -->
     <script type="text/babel" data-presets="env,react">
       const { useState, useMemo } = React;
-      const {
-        ResponsiveContainer,
-        LineChart, Line, XAxis, YAxis, Tooltip, Legend,
-        PieChart, Pie, Cell,
-        BarChart, Bar,
-        RadialBarChart, RadialBar
-      } = window.Recharts;
+      const { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, Legend, PieChart, Pie, Cell, BarChart, Bar, RadialBarChart, RadialBar } = window.Recharts;
 
-      // ---------- Demo Data ----------
+      const COLORS = ["#10b981", "#6366f1", "#f59e0b", "#ef4444", "#14b8a6", "#8b5cf6"];
+      function currency(n) {
+        return new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(n);
+      }
+
       const spendingByCategory = [
         { name: "Food", value: 5400 },
         { name: "Transport", value: 1900 },
@@ -49,135 +41,34 @@
         { month: "Nov", inflow: 40000, outflow: 28600 },
       ];
 
-      const investments = [
-        { name: "MFs", value: 120000 },
-        { name: "Stocks", value: 80000 },
-        { name: "Gold", value: 25000 },
-        { name: "FD/RD", value: 90000 },
-      ];
-
-      const socialChallenges = [
-        { name: "No-Sugar Week", members: 42, pot: 4200, progress: 0.68 },
-        { name: "₹100/Day Save", members: 96, pot: 19200, progress: 0.41 },
-        { name: "Taxi→Metro Swap", members: 28, pot: 5600, progress: 0.87 },
-      ];
-
       const goalTemplates = [
         { id: "trip", label: "Goa Trip", target: 15000, saved: 6200 },
         { id: "iphone", label: "New Phone", target: 60000, saved: 18000 },
         { id: "course", label: "Data Course", target: 12000, saved: 7200 },
       ];
 
-      const COLORS = ["#10b981", "#6366f1", "#f59e0b", "#ef4444", "#14b8a6", "#8b5cf6"];
-      function currency(n) {
-        return new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(n);
+      const NAV = ["Home","Money","Goals"];
+      function SectionTitle({ title }) {
+        return <h2 className="text-xl font-semibold my-2">{title}</h2>;
       }
 
-      // simple emoji icons
-      const Icon = {
-        PiggyBank: function () { return <span className="text-lg">🐷</span>; },
-        Home: function () { return <span className="text-lg">🏠</span>; },
-        Wallet: function () { return <span className="text-lg">👛</span>; },
-        Receipt: function () { return <span className="text-lg">🧾</span>; },
-        TrendingUp: function () { return <span className="text-lg">📈</span>; },
-        Target: function () { return <span className="text-lg">🎯</span>; },
-        Calendar: function () { return <span className="text-lg">🗓️</span>; },
-        Users: function () { return <span className="text-lg">👥</span>; },
-        Coins: function () { return <span className="text-lg">🪙</span>; },
-        Settings: function () { return <span className="text-lg">⚙️</span>; },
-        Bell: function () { return <span className="text-lg">🔔</span>; },
-        Chart: function () { return <span className="text-lg">📊</span>; },
-        Sparkles: function () { return <span className="text-lg">✨</span>; },
-        Book: function () { return <span className="text-lg">📘</span>; },
-        Plus: function () { return <span className="text-lg">➕</span>; },
-      };
-
-      const NAV = [
-        { key: "home", label: "Home", icon: Icon.Home },
-        { key: "money", label: "Money", icon: Icon.Wallet },
-        { key: "spending", label: "Spends", icon: Icon.Receipt },
-        { key: "invest", label: "Invest", icon: Icon.TrendingUp },
-        { key: "goals", label: "Goals", icon: Icon.Target },
-        { key: "calendar", label: "Calendar", icon: Icon.Calendar },
-        { key: "social", label: "Social", icon: Icon.Users },
-        { key: "cash", label: "Cash", icon: Icon.Coins },
-        { key: "settings", label: "Settings", icon: Icon.Settings },
-      ];
-
-      function SectionTitle(props) {
-        var Ico = props.icon;
-        return (
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <div className="flex items-center gap-2">
-                <Ico />
-                <h2 className="text-xl font-semibold">{props.title}</h2>
-              </div>
-              {props.subtitle && <p className="text-sm text-slate-500 mt-1">{props.subtitle}</p>}
-            </div>
-            <span className="inline-flex items-center rounded-full text-xs font-medium px-2 py-0.5 bg-slate-100 text-slate-700">Smart Coach</span>
-          </div>
-        );
-      }
-
-      function KPI(props) {
-        return (
-          <div className="rounded-2xl border bg-white shadow-sm">
-            <div className="px-4 pt-4 pb-2 text-sm text-slate-500 font-medium">{props.label}</div>
-            <div className="px-4 pb-4">
-              <div className="text-2xl font-bold">{props.value}</div>
-              {props.hint && <div className="text-xs text-slate-500 mt-1">{props.hint}</div>}
-            </div>
-          </div>
-        );
-      }
-
-      function Button(props) {
-        var variant = props.variant;
-        var className = props.className || "";
-        var base = "inline-flex items-center justify-center px-3 py-2 text-sm font-medium rounded-xl border transition";
-        if (variant === "primary") base += " bg-indigo-600 text-white border-indigo-600 hover:bg-indigo-700";
-        else if (variant === "secondary") base += " bg-slate-100 text-slate-900 hover:bg-slate-200";
-        else base += " bg-white hover:bg-slate-50";
-        var rest = Object.assign({}, props);
-        delete rest.variant; delete rest.className; delete rest.children;
-        return <button className={base + " " + className} {...rest}>{props.children}</button>;
-      }
-
-      function Input(props) { return <input className="w-full rounded-xl border px-3 py-2" {...props} />; }
-      function Label(props) { return <label className="text-xs text-slate-600">{props.children}</label>; }
-
-      function lastItem(arr) { return arr[arr.length - 1]; }
-
-      function DashboardSection(props) {
-        var cashBalance = props.cashBalance, onQuickAdd = props.onQuickAdd;
-        var netSavings = useMemo(function () {
-          var totalIn = monthlyCashflow.reduce(function (a, c) { return a + c.inflow; }, 0);
-          var totalOut = monthlyCashflow.reduce(function (a, c) { return a + c.outflow; }, 0);
+      function Dashboard() {
+        const netSavings = useMemo(() => {
+          let totalIn = monthlyCashflow.reduce((a, c) => a + c.inflow, 0);
+          let totalOut = monthlyCashflow.reduce((a, c) => a + c.outflow, 0);
           return totalIn - totalOut;
         }, []);
-
-        var last = lastItem(monthlyCashflow);
-
         return (
           <div className="space-y-6">
-            <SectionTitle icon={Icon.Home} title="FinBuddy Overview" subtitle="Your money, made friendly." />
-
-            <div className="grid md:grid-cols-4 gap-3">
-              <KPI label="Cash Maintained" value={currency(cashBalance)} hint="Available in wallet / bank" />
-              <KPI label="This Month – Income" value={currency(last.inflow)} />
-              <KPI label="This Month – Spends" value={currency(last.outflow)} />
-              <KPI label="Net Savings (6 mo)" value={currency(netSavings)} />
-            </div>
-
+            <SectionTitle title="FinBuddy Overview" />
             <div className="rounded-2xl border bg-white shadow-sm">
-              <div className="px-4 pt-4 pb-2 font-semibold flex items-center gap-2"><span>📊</span> Cashflow (6 months)</div>
+              <div className="px-4 pt-4 pb-2 font-semibold">Cashflow (6 months)</div>
               <div className="px-2 pb-4 h-56">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={monthlyCashflow}>
                     <XAxis dataKey="month" />
                     <YAxis />
-                    <Tooltip formatter={function(v){return currency(v);}} />
+                    <Tooltip formatter={(v)=>currency(v)} />
                     <Legend />
                     <Line type="monotone" dataKey="inflow" stroke="#10b981" strokeWidth={2} dot={false} />
                     <Line type="monotone" dataKey="outflow" stroke="#ef4444" strokeWidth={2} dot={false} />
@@ -185,462 +76,46 @@
                 </ResponsiveContainer>
               </div>
             </div>
-
             <div className="rounded-2xl border bg-white shadow-sm">
-              <div className="px-4 pt-4 pb-2 font-semibold flex items-center gap-2"><span>🧾</span> Spending by Category</div>
+              <div className="px-4 pt-4 pb-2 font-semibold">Spending by Category</div>
               <div className="px-2 pb-4 h-60">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie data={spendingByCategory} dataKey="value" nameKey="name" innerRadius={60} outerRadius={100}>
-                      {spendingByCategory.map(function(_, i){ return <Cell key={i} fill={COLORS[i % COLORS.length]} />; })}
+                      {spendingByCategory.map((_, i) => (
+                        <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                      ))}
                     </Pie>
-                    <Tooltip formatter={function(v){return currency(v);}} />
+                    <Tooltip formatter={(v)=>currency(v)} />
                     <Legend />
                   </PieChart>
                 </ResponsiveContainer>
               </div>
             </div>
-
-            <QuickAdd cashBalance={cashBalance} onQuickAdd={onQuickAdd} />
-          </div>
-        );
-      }
-
-      function MoneyManagementSection() {
-        var _a = useState('budget'), tabState = _a[0], setTab = _a[1];
-        var tab = tabState;
-        return (
-          <div className="space-y-6">
-            <SectionTitle icon={Icon.Wallet} title="Money Management" subtitle="Budget, bills, and the cashflow calendar." />
-
-            <div className="rounded-2xl border bg-white shadow-sm">
-              <div className="px-4 pt-4">
-                <div className="grid grid-cols-3 gap-2">
-                  <Button className={tab==='budget' ? 'bg-indigo-600 text-white' : ''} onClick={function(){setTab('budget');}}>Budget</Button>
-                  <Button className={tab==='bills' ? 'bg-indigo-600 text-white' : ''} onClick={function(){setTab('bills');}}>Bills</Button>
-                  <Button className={tab==='calendar' ? 'bg-indigo-600 text-white' : ''} onClick={function(){setTab('calendar');}}>Cashflow Calendar</Button>
-                </div>
-              </div>
-              <div className="px-4 pb-4 space-y-4">
-                {tab === 'budget' && (
-                  <div className="grid md:grid-cols-3 gap-3">
-                    {spendingByCategory.map(function(row, i){
-                      return (
-                        <div key={row.name} className="rounded-2xl border border-dashed p-4 bg-white">
-                          <div className="text-sm font-semibold">{row.name}</div>
-                          <div className="text-xl font-semibold mt-1">{currency(row.value)}</div>
-                          <div className="h-2 bg-slate-100 rounded-full mt-2">
-                            <div
-                              className="h-2 rounded-full"
-                              style={{ width: Math.min(100, (row.value / 6000) * 100) + "%", backgroundColor: COLORS[i % COLORS.length] }}
-                            />
-                          </div>
-                          <div className="text-xs text-slate-500 mt-1">Budget cap: {currency(6000)}</div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-                {tab === 'bills' && <BillList />}
-                {tab === 'calendar' && <CashflowCalendar />}
-              </div>
+            <div className="rounded-2xl border bg-white shadow-sm p-4">
+              <SectionTitle title="Goals" />
+              <ResponsiveContainer width="100%" height={300}>
+                <RadialBarChart innerRadius="20%" outerRadius="90%" data={goalTemplates.map(g=>({name:g.label,value:Math.round((g.saved/g.target)*100)}))}>
+                  <RadialBar minAngle={15} clockWise dataKey="value" />
+                  <Legend />
+                  <Tooltip formatter={function(v){ return v + '%'; }} />
+                </RadialBarChart>
+              </ResponsiveContainer>
             </div>
-          </div>
-        );
-      }
-
-      function SpendingSection() {
-        return (
-          <div className="space-y-6">
-            <SectionTitle icon={Icon.Receipt} title="Spending Management" subtitle="Track spends, get alerts, and cut waste." />
-            <div className="rounded-2xl border bg-white shadow-sm">
-              <div className="px-4 pt-4 pb-2 font-semibold flex items-center gap-2"><Icon.Bell /> Smart Alerts</div>
-              <div className="px-4 pb-4 grid md:grid-cols-3 gap-3">
-                <SmartAlert text="Spike in Food spends this week (+18%)." />
-                <SmartAlert text="3 subscriptions renew next week (₹899 total)." />
-                <SmartAlert text="Round-up savings ready: ₹126 to Micro Goals." />
-              </div>
-            </div>
-
-            <div className="rounded-2xl border bg-white shadow-sm">
-              <div className="px-4 pt-4 pb-2 font-semibold flex items-center gap-2"><Icon.Sparkles /> AI Insights</div>
-              <div className="px-4 pb-4 space-y-2 text-sm text-slate-600">
-                <p>🍵 Swap 2 café runs for home brews → save ~ {currency(480)} / week.</p>
-                <p>🚗 Take Metro twice this week → save ~ {currency(220)} and 1.2kg CO₂.</p>
-                <p>📦 Cancel idle subscription: "Stream+" (unused 45 days) → {currency(299)} / month.</p>
-              </div>
-            </div>
-          </div>
-        );
-      }
-
-      function InvestmentSection() {
-        var total = investments.reduce(function (a, c) { return a + c.value; }, 0);
-        return (
-          <div className="space-y-6">
-            <SectionTitle icon={Icon.TrendingUp} title="Investments" subtitle="Track and rebalance with simple nudges." />
-
-            <div className="grid lg:grid-cols-2 gap-4">
-              <div className="rounded-2xl border bg-white shadow-sm">
-                <div className="px-4 pt-4 pb-2 font-semibold">Portfolio Split</div>
-                <div className="px-2 pb-4 h-60">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={investments}>
-                      <XAxis dataKey="name" />
-                      <YAxis />
-                      <Tooltip formatter={function(v){return currency(v);}} />
-                      <Bar dataKey="value" radius={[8,8,0,0]}>
-                        {investments.map(function(_, i){ return <Cell key={i} fill={COLORS[i % COLORS.length]} />; })}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-                <div className="px-4 pb-4 text-sm text-slate-600">Total: <span className="font-semibold ml-1">{currency(total)}</span></div>
-              </div>
-
-              <div className="rounded-2xl border bg-white shadow-sm">
-                <div className="px-4 pt-4 pb-2 font-semibold">Coach Tips</div>
-                <div className="px-4 pb-4 space-y-2 text-sm text-slate-600">
-                  <p>• Rebalance: Lower FD by 5%, add to index MFs for long-term growth.</p>
-                  <p>• SIP suggestion: {currency(3000)} / month → Nifty 50 index fund.</p>
-                  <p>• Rainy-day: keep {currency(60000)} in liquid funds (6 months expenses).</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        );
-      }
-
-      function GoalsSection() {
-        var progressData = goalTemplates.map(function(g){ return ({ name: g.label, value: Math.round((g.saved / g.target) * 100) }); });
-        return (
-          <div className="space-y-6">
-            <SectionTitle icon={Icon.Target} title="Micro Goals" subtitle="Tiny targets, big wins." />
-            <div className="grid lg:grid-cols-2 gap-4">
-              <div className="rounded-2xl border bg-white shadow-sm">
-                <div className="px-4 pt-4 pb-2 font-semibold">Progress Radar</div>
-                <div className="px-2 pb-4 h-64">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <RadialBarChart innerRadius="20%" outerRadius="90%" data={progressData}>
-                      <RadialBar minAngle={15} clockWise dataKey="value" />
-                      <Legend />
-                      <Tooltip formatter={function(v){ return v + '%'; }} />
-                    </RadialBarChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-              <div className="rounded-2xl border bg-white shadow-sm">
-                <div className="px-4 pt-4 pb-2 font-semibold">Create / Manage Goals</div>
-                <div className="px-4 pb-4 space-y-3">
-                  {goalTemplates.map(function(g, i){
-                    return (
-                      <div key={g.id} className="p-3 rounded-xl border flex items-center gap-4">
-                        <div className="w-28 text-sm">
-                          <div className="font-semibold">{g.label}</div>
-                          <div className="text-slate-500">{currency(g.saved)} / {currency(g.target)}</div>
-                        </div>
-                        <div className="h-2 flex-1 bg-slate-100 rounded-full">
-                          <div className="h-2 rounded-full" style={{ width: ((g.saved / g.target) * 100) + '%', backgroundColor: COLORS[i % COLORS.length] }} />
-                        </div>
-                        <Button variant="secondary" className="ml-2 text-sm">Boost</Button>
-                      </div>
-                    );
-                  })}
-                  <div className="grid grid-cols-3 gap-2">
-                    <Input placeholder="Goal name" />
-                    <Input placeholder="Target (₹)" type="number" />
-                    <Button className="bg-indigo-600 text-white">➕&nbsp;Add</Button>
-                  </div>
-                  <p className="text-xs text-slate-500">Tip: Turn on round-ups to auto-fund goals with spare change.</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        );
-      }
-
-      function CalendarSection() {
-        return (
-          <div className="space-y-6">
-            <SectionTitle icon={Icon.Calendar} title="Cashflow Calendar" subtitle="Paydays, bills, and goals in one view." />
-            <CashflowCalendar />
-          </div>
-        );
-      }
-
-      function SocialSection() {
-        return (
-          <div className="space-y-6">
-            <SectionTitle icon={Icon.Users} title="Social Saving" subtitle="Challenges with friends that actually save money." />
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {socialChallenges.map(function(c, i){
-                return (
-                  <div key={i} className="rounded-2xl border bg-white shadow-sm">
-                    <div className="px-4 pt-4 pb-2 font-semibold flex items-center justify-between">
-                      <span>{c.name}</span>
-                      <span className="inline-flex items-center rounded-full text-xs font-medium px-2 py-0.5 bg-slate-100 text-slate-700">{c.members} joined</span>
-                    </div>
-                    <div className="px-4 pb-4">
-                      <div className="text-sm text-slate-600">Savings Pot: <span className="font-semibold">{currency(c.pot)}</span></div>
-                      <div className="h-2 bg-slate-100 rounded-full mt-3">
-                        <div className="h-2 rounded-full" style={{ width: (c.progress * 100) + '%', backgroundColor: COLORS[i % COLORS.length] }} />
-                      </div>
-                    </div>
-                    <div className="px-4 pb-4">
-                      <Button className="w-full bg-indigo-600 text-white">Join Challenge</Button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        );
-      }
-
-      function CashMaintainedSection(props) {
-        var ledger = props.ledger, onAdd = props.onAdd;
-        var balance = ledger.reduce(function (a, t) { return a + (t.type === "in" ? t.amount : -t.amount); }, 0);
-        return (
-          <div className="space-y-6">
-            <SectionTitle icon={Icon.Coins} title="Cash Maintained" subtitle="Quick ledger for wallet & petty cash." />
-
-            <div className="grid md:grid-cols-3 gap-4">
-              <KPI label="Current Balance" value={currency(balance)} />
-              <KPI label="Inflow (30d)" value={currency(ledger.filter(function(l){return l.type==='in';}).reduce(function (a,c){return a+c.amount;},0))} />
-              <KPI label="Outflow (30d)" value={currency(ledger.filter(function(l){return l.type==='out';}).reduce(function (a,c){return a+c.amount;},0))} />
-            </div>
-
-            <div className="rounded-2xl border bg-white shadow-sm">
-              <div className="px-4 pt-4 pb-2 font-semibold">Add Entry</div>
-              <div className="px-4 pb-4 grid sm:grid-cols-5 gap-2">
-                <div className="sm:col-span-2">
-                  <Label>Label</Label>
-                  <Input id="entry-label" placeholder="e.g., Uber refund / Groceries" />
-                </div>
-                <div className="sm:col-span-2">
-                  <Label>Amount (₹)</Label>
-                  <Input id="entry-amount" type="number" placeholder="500" />
-                </div>
-                <div className="sm:col-span-1 flex items-end gap-2">
-                  <Button className="w-full bg-indigo-600 text-white" onClick={function(){ onAdd({ type: "in" }); }}>➕&nbsp;In</Button>
-                  <Button className="w-full" onClick={function(){ onAdd({ type: "out" }); }}>Out</Button>
-                </div>
-              </div>
-            </div>
-
-            <div className="rounded-2xl border bg-white shadow-sm">
-              <div className="px-4 pt-4 pb-2 font-semibold">Recent Entries</div>
-              <div className="px-4 pb-4 space-y-2">
-                {ledger.length === 0 && <p className="text-sm text-slate-500">No entries yet. Add your first transaction above.</p>}
-                {ledger.map(function(t, i){
-                  return (
-                    <div key={i} className="flex items-center justify-between p-3 border rounded-xl">
-                      <div className="flex items-center gap-3">
-                        <span className={"text-lg " + (t.type==='in' ? 'text-emerald-600' : 'text-rose-600')}>₹</span>
-                        <div>
-                          <div className="font-medium">{t.label}</div>
-                          <div className="text-xs text-slate-500">{new Date(t.date).toLocaleString("en-IN")}</div>
-                        </div>
-                      </div>
-                      <div className={"font-semibold " + (t.type === "in" ? "text-emerald-600" : "text-rose-600")}>
-                        {(t.type === "in" ? "+" : "-") + currency(t.amount)}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-        );
-      }
-
-      function SettingsSection() {
-        return (
-          <div className="space-y-6">
-            <SectionTitle icon={Icon.Settings} title="Settings" subtitle="Personalize your coach." />
-            <div className="rounded-2xl border bg-white shadow-sm">
-              <div className="px-4 pt-4 pb-2 font-semibold">Learning Hub</div>
-              <div className="px-4 pb-4 space-y-2 text-sm text-slate-600">
-                <p className="flex items-center gap-2"><Icon.Book /> SIP vs Lumpsum — what suits Gen Z cashflows?</p>
-                <p className="flex items-center gap-2"><Icon.Book /> How to read expense ratios in index funds.</p>
-                <p className="flex items-center gap-2"><Icon.Book /> Student credit cards without annual fees.</p>
-              </div>
-            </div>
-          </div>
-        );
-      }
-
-      function QuickAdd(props) {
-        var cashBalance = props.cashBalance, onQuickAdd = props.onQuickAdd;
-        var _a = useState(""), label = _a[0], setLabel = _a[1];
-        var _b = useState(""), amount = _b[0], setAmount = _b[1];
-        return (
-          <div className="rounded-2xl border bg-white shadow-sm">
-            <div className="px-4 pt-4 pb-2 font-semibold flex items-center gap-2"><span>➕</span> Quick Add (affects Cash Maintained)</div>
-            <div className="px-4 pb-4 grid md:grid-cols-5 gap-2">
-              <div className="md:col-span-2">
-                <Label>Label</Label>
-                <Input value={label} onChange={function(e){setLabel(e.target.value);}} placeholder="e.g., Snack / Reimbursement" />
-              </div>
-              <div className="md:col-span-2">
-                <Label>Amount (₹)</Label>
-                <Input type="number" value={amount} onChange={function(e){setAmount(e.target.value);}} placeholder="200" />
-              </div>
-              <div className="md:col-span-1 flex items-end gap-2">
-                <Button className="w-full bg-indigo-600 text-white" onClick={function(){ onQuickAdd({label: label, amount: Number(amount)||0, type:'in'}); setLabel(""); setAmount(""); }}>In</Button>
-                <Button className="w-full" onClick={function(){ onQuickAdd({label: label, amount: Number(amount)||0, type:'out'}); setLabel(""); setAmount(""); }}>Out</Button>
-              </div>
-            </div>
-            <div className="px-4 pb-4 text-xs text-slate-500">Current cash: {currency(cashBalance)}</div>
-          </div>
-        );
-      }
-
-      function SmartAlert(props) {
-        return (
-          <div className="p-3 border rounded-xl bg-white flex items-center gap-2">
-            <Icon.Bell />
-            <span className="text-sm">{props.text}</span>
-          </div>
-        );
-      }
-
-      function BillList() {
-        var bills = [
-          { name: "Spotify Student", date: "15 Nov", amount: 59 },
-          { name: "Phone", date: "18 Nov", amount: 399 },
-          { name: "Wi-Fi", date: "22 Nov", amount: 699 },
-        ];
-        return (
-          <div className="rounded-2xl border bg-white shadow-sm">
-            <div className="px-4 pt-4 pb-2 font-semibold">Upcoming Bills</div>
-            <div className="px-4 pb-4 space-y-2">
-              {bills.map(function(b, i){
-                return (
-                  <div key={i} className="flex items-center justify-between p-3 border rounded-xl">
-                    <div className="flex items-center gap-3">
-                      <Icon.Receipt />
-                      <div>
-                        <div className="font-medium">{b.name}</div>
-                        <div className="text-xs text-slate-500">Due {b.date}</div>
-                      </div>
-                    </div>
-                    <div className="font-semibold">{currency(b.amount)}</div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        );
-      }
-
-      function CashflowCalendar() {
-        var days = Array.from({ length: 14 }).map(function(_, i){
-          var d = new Date();
-          d.setDate(d.getDate() + i);
-          return d;
-        });
-        var paydays = new Set([3, 10]);
-        var billOffsets = new Map([
-          [5, { name: "Wi-Fi", amount: 699 }],
-          [8, { name: "Phone", amount: 399 }],
-        ]);
-
-        return (
-          <div className="grid grid-cols-2 md:grid-cols-7 gap-2">
-            {days.map(function(d, i){
-              var isPayday = paydays.has(i);
-              var bill = billOffsets.get(i);
-              return (
-                <div key={i} className="rounded-2xl p-3 border bg-white">
-                  <div className="text-xs text-slate-500">{d.toLocaleDateString("en-IN", { weekday: "short" })}</div>
-                  <div className="text-lg font-semibold">{d.getDate()}</div>
-                  {isPayday && (
-                    <span className="inline-flex items-center rounded-full text-xs font-medium px-2 py-0.5 bg-emerald-600 text-white mt-2">Payday {currency(20000)}</span>
-                  )}
-                  {bill && (
-                    <span className="inline-flex items-center rounded-full text-xs font-medium px-2 py-0.5 bg-slate-100 text-slate-700 mt-2">Bill: {bill.name} {currency(bill.amount)}</span>
-                  )}
-                </div>
-              );
-            })}
           </div>
         );
       }
 
       function FinBuddyApp() {
-        var _a = useState("home"), tabState = _a[0], setTab = _a[1];
-        var tab = tabState;
-        var _b = useState([
-          { type: "in", label: "Wallet Top-up", amount: 2000, date: Date.now() - 86400000 * 2 },
-          { type: "out", label: "Snacks", amount: 120, date: Date.now() - 86400000 * 2 },
-          { type: "out", label: "Auto", amount: 90, date: Date.now() - 86400000 * 1 },
-        ]), ledger = _b[0], setLedger = _b[1];
-
-        var cashBalance = ledger.reduce(function (a, t) { return a + (t.type === "in" ? t.amount : -t.amount); }, 0);
-
-        function onQuickAdd(t) {
-          if (!t || !t.label || !t.amount) return;
-          setLedger(function (prev) { return prev.concat([{ type: t.type, label: t.label, amount: t.amount, date: Date.now() }]); });
-        }
-
-        function onCashAdd(o) {
-          var type = o.type;
-          var labelEl = document.getElementById("entry-label");
-          var amountEl = document.getElementById("entry-amount");
-          var label = labelEl && labelEl.value ? labelEl.value.trim() : "";
-          var amt = Number((amountEl && amountEl.value) || 0);
-          if (!label || !amt) return;
-          setLedger(function (prev) { return prev.concat([{ type: type, label: label, amount: amt, date: Date.now() }]); });
-          if (labelEl) labelEl.value = "";
-          if (amountEl) amountEl.value = "";
-        }
-
+        const [tab, setTab] = useState("Home");
         return (
-          <div className="max-w-5xl mx-auto px-3 pb-24 pt-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <div className="h-9 w-9 rounded-2xl bg-indigo-100 grid place-content-center">
-                  <Icon.PiggyBank />
-                </div>
-                <div>
-                  <h1 className="text-lg font-semibold">FinBuddy</h1>
-                  <p className="text-xs text-slate-500">Smart Financial Coach for Gen Z</p>
-                </div>
-              </div>
-              <Button className="border bg-slate-50">✨&nbsp;Ask Coach</Button>
-            </div>
-
-            <div className="space-y-6">
-              {tab === "home" && <DashboardSection cashBalance={cashBalance} onQuickAdd={onQuickAdd} />}
-              {tab === "money" && <MoneyManagementSection />}
-              {tab === "spending" && <SpendingSection />}
-              {tab === "invest" && <InvestmentSection />}
-              {tab === "goals" && <GoalsSection />}
-              {tab === "calendar" && <CalendarSection />}
-              {tab === "social" && <SocialSection />}
-              {tab === "cash" && <CashMaintainedSection ledger={ledger} onAdd={onCashAdd} />}
-              {tab === "settings" && <SettingsSection />}
-            </div>
-
-            <nav className="fixed bottom-3 left-1/2 -translate-x-1/2 w-[min(100%-1rem,64rem)]">
-              <div className="bg-white/80 backdrop-blur border rounded-2xl shadow-lg px-2 py-1 grid grid-cols-9">
-                {NAV.map(function(n){
-                  var ActiveIcon = n.icon;
-                  var active = tab === n.key;
-                  return (
-                    <button
-                      key={n.key}
-                      onClick={function(){ setTab(n.key); }}
-                      className={"flex flex-col items-center py-2 rounded-xl transition " + (active ? "text-indigo-600" : "text-slate-500 hover:text-slate-800")}
-                      aria-label={n.label}
-                    >
-                      <ActiveIcon />
-                      <span className="text-[10px] mt-1">{n.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
+          <div className="max-w-4xl mx-auto px-4 py-6">
+            <h1 className="text-2xl font-bold mb-4">FinBuddy</h1>
+            <div>{tab==="Home" && <Dashboard />}</div>
+            <nav className="fixed bottom-3 left-1/2 -translate-x-1/2 bg-white border rounded-2xl shadow-lg flex">
+              {NAV.map(n=>
+                <button key={n} onClick={()=>setTab(n)} className={"px-3 py-2 "+(tab===n?"text-indigo-600 font-semibold":"text-slate-600")}>{n}</button>
+              )}
             </nav>
           </div>
         );
