@@ -1,0 +1,718 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>FinBuddy – Single File React App</title>
+    <!-- Tailwind CSS (CDN) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              primary: { DEFAULT: '#6366f1' }, // indigo-500
+            }
+          }
+        }
+      }
+    </script>
+    <!-- React 18 (UMD) -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <!-- Babel (so we can write JSX inline) -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- Framer Motion (UMD) -->
+    <script src="https://unpkg.com/framer-motion/dist/framer-motion.umd.js"></script>
+    <!-- Recharts (UMD) -->
+    <script src="https://unpkg.com/recharts/umd/Recharts.min.js"></script>
+    <style>
+      /* Light utility to mimic "card" look */
+      .card { @apply rounded-2xl border bg-white shadow-sm dark:bg-slate-900 dark:border-slate-800; }
+      .card-header { @apply px-4 pt-4 pb-2; }
+      .card-title { @apply text-base font-semibold; }
+      .card-content { @apply px-4 pb-4; }
+      .card-footer { @apply px-4 pb-4; }
+      .btn { @apply inline-flex items-center justify-center px-3 py-2 text-sm font-medium rounded-xl border bg-white hover:bg-slate-50; }
+      .btn-primary { @apply bg-primary text-white border-primary hover:bg-indigo-600; }
+      .btn-secondary { @apply bg-slate-100 text-slate-900 hover:bg-slate-200; }
+      .badge { @apply inline-flex items-center rounded-full text-xs font-medium px-2 py-0.5 bg-slate-100 text-slate-700; }
+      .badge-emerald { @apply bg-emerald-600 text-white; }
+      .muted { @apply text-slate-500; }
+      .input { @apply w-full rounded-xl border px-3 py-2; }
+      .switch { @apply relative inline-flex h-5 w-9 items-center rounded-full bg-slate-300; }
+      .switch-dot { @apply inline-block h-4 w-4 transform rounded-full bg-white transition; }
+    </style>
+  </head>
+  <body class="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-950">
+    <div id="root"></div>
+
+    <script type="text/babel">
+      const { useState, useMemo } = React;
+      const { motion } = window.framerMotion;
+      const {
+        ResponsiveContainer,
+        LineChart, Line, XAxis, YAxis, Tooltip, Legend,
+        PieChart, Pie, Cell,
+        BarChart, Bar,
+        RadialBarChart, RadialBar
+      } = window.Recharts;
+
+      // ---------- Demo Data ----------
+      const spendingByCategory = [
+        { name: "Food", value: 5400 },
+        { name: "Transport", value: 1900 },
+        { name: "Shopping", value: 3500 },
+        { name: "Entertainment", value: 2400 },
+        { name: "Bills", value: 4100 },
+      ];
+
+      const monthlyCashflow = [
+        { month: "Jun", inflow: 32000, outflow: 22000 },
+        { month: "Jul", inflow: 34000, outflow: 23000 },
+        { month: "Aug", inflow: 35500, outflow: 24000 },
+        { month: "Sep", inflow: 36000, outflow: 26500 },
+        { month: "Oct", inflow: 38000, outflow: 27100 },
+        { month: "Nov", inflow: 40000, outflow: 28600 },
+      ];
+
+      const investments = [
+        { name: "MFs", value: 120000 },
+        { name: "Stocks", value: 80000 },
+        { name: "Gold", value: 25000 },
+        { name: "FD/RD", value: 90000 },
+      ];
+
+      const socialChallenges = [
+        { name: "No-Sugar Week", members: 42, pot: 4200, progress: 0.68 },
+        { name: "₹100/Day Save", members: 96, pot: 19200, progress: 0.41 },
+        { name: "Taxi→Metro Swap", members: 28, pot: 5600, progress: 0.87 },
+      ];
+
+      const goalTemplates = [
+        { id: "trip", label: "Goa Trip", target: 15000, saved: 6200 },
+        { id: "iphone", label: "New Phone", target: 60000, saved: 18000 },
+        { id: "course", label: "Data Course", target: 12000, saved: 7200 },
+      ];
+
+      const COLORS = ["#10b981", "#6366f1", "#f59e0b", "#ef4444", "#14b8a6", "#8b5cf6"];
+
+      const currency = (n) =>
+        new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(n);
+
+      // simple icon set (emoji to keep it build-less)
+      const Icon = {
+        Home: () => <span className="text-lg">🏠</span>,
+        Wallet: () => <span className="text-lg">👛</span>,
+        PiggyBank: () => <span className="text-lg">🐷</span>,
+        TrendingUp: () => <span className="text-lg">📈</span>,
+        Calendar: () => <span className="text-lg">🗓️</span>,
+        Users: () => <span className="text-lg">👥</span>,
+        Coins: () => <span className="text-lg">🪙</span>,
+        Settings: () => <span className="text-lg">⚙️</span>,
+        Plus: () => <span className="text-lg">➕</span>,
+        Rupee: () => <span className="text-lg">₹</span>,
+        Receipt: () => <span className="text-lg">🧾</span>,
+        Target: () => <span className="text-lg">🎯</span>,
+        Bell: () => <span className="text-lg">🔔</span>,
+        Chart: () => <span className="text-lg">📊</span>,
+        Sparkles: () => <span className="text-lg">✨</span>,
+        Book: () => <span className="text-lg">📘</span>,
+      };
+
+      // ---------- UI atoms (shadcn-like light wrappers) ----------
+      const SectionTitle = ({ icon: Ico, title, subtitle }) => (
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2">
+              <Ico />
+              <h2 className="text-xl font-semibold">{title}</h2>
+            </div>
+            {subtitle && <p className="text-sm muted mt-1">{subtitle}</p>}
+          </div>
+          <span className="badge">Smart Coach</span>
+        </div>
+      );
+
+      const KPI = ({ label, value, hint }) => (
+        <div className="card">
+          <div className="card-header pb-2">
+            <div className="text-sm muted font-medium">{label}</div>
+          </div>
+          <div className="card-content pt-0">
+            <div className="text-2xl font-bold">{value}</div>
+            {hint && <div className="text-xs muted mt-1">{hint}</div>}
+          </div>
+        </div>
+      );
+
+      const Button = ({ children, variant="default", className="", ...props }) => {
+        const base = "btn";
+        const styles =
+          variant === "primary" ? "btn btn-primary" :
+          variant === "secondary" ? "btn btn-secondary" : base;
+        return <button className={styles + " " + className} {...props}>{children}</button>;
+      };
+
+      const Badge = ({ children, className="", variant }) => {
+        const extra = variant === "secondary" ? "bg-slate-100 text-slate-700" : "";
+        return <span className={"badge " + extra + " " + className}>{children}</span>;
+      };
+
+      const Input = (props) => <input className="input" {...props} />;
+      const Label = ({ children, className="" }) => <label className={"text-xs " + className}>{children}</label>;
+
+      // ---------- Sections ----------
+      function DashboardSection({ cashBalance, onQuickAdd }) {
+        const netSavings = useMemo(() => {
+          const totalIn = monthlyCashflow.reduce((a, c) => a + c.inflow, 0);
+          const totalOut = monthlyCashflow.reduce((a, c) => a + c.outflow, 0);
+          return totalIn - totalOut;
+        }, []);
+
+        return (
+          <div className="space-y-6">
+            <SectionTitle icon={Icon.Home} title="FinBuddy Overview" subtitle="Your money, made friendly." />
+
+            <div className="grid md:grid-cols-4 gap-3">
+              <KPI label="Cash Maintained" value={currency(cashBalance)} hint="Available in wallet / bank" />
+              <KPI label="This Month – Income" value={currency(monthlyCashflow.at(-1).inflow)} />
+              <KPI label="This Month – Spends" value={currency(monthlyCashflow.at(-1).outflow)} />
+              <KPI label="Net Savings (6 mo)" value={currency(netSavings)} />
+            </div>
+
+            <div className="card">
+              <div className="card-header">
+                <div className="card-title flex items-center gap-2"><Icon.Chart /> Cashflow (6 months)</div>
+              </div>
+              <div className="card-content h-56">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={monthlyCashflow}>
+                    <XAxis dataKey="month" />
+                    <YAxis />
+                    <Tooltip formatter={(v) => currency(v)} />
+                    <Legend />
+                    <Line type="monotone" dataKey="inflow" stroke="#10b981" strokeWidth={2} dot={false} />
+                    <Line type="monotone" dataKey="outflow" stroke="#ef4444" strokeWidth={2} dot={false} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            <div className="card">
+              <div className="card-header">
+                <div className="card-title flex items-center gap-2"><Icon.Receipt /> Spending by Category</div>
+              </div>
+              <div className="card-content h-60">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie data={spendingByCategory} dataKey="value" nameKey="name" innerRadius={60} outerRadius={100}>
+                      {spendingByCategory.map((_, i) => (
+                        <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip formatter={(v) => currency(v)} />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            <QuickAdd cashBalance={cashBalance} onQuickAdd={onQuickAdd} />
+          </div>
+        );
+      }
+
+      function MoneyManagementSection() {
+        const [tab, setTab] = useState('budget');
+        return (
+          <div className="space-y-6">
+            <SectionTitle icon={Icon.Wallet} title="Money Management" subtitle="Budget, bills, and the cashflow calendar." />
+
+            <div className="card">
+              <div className="card-header">
+                <div className="grid grid-cols-3 gap-2">
+                  <Button className={tab==='budget' ? 'btn-primary' : ''} onClick={()=>setTab('budget')}>Budget</Button>
+                  <Button className={tab==='bills' ? 'btn-primary' : ''} onClick={()=>setTab('bills')}>Bills</Button>
+                  <Button className={tab==='calendar' ? 'btn-primary' : ''} onClick={()=>setTab('calendar')}>Cashflow Calendar</Button>
+                </div>
+              </div>
+              <div className="card-content space-y-4">
+                {tab === 'budget' && (
+                  <div className="grid md:grid-cols-3 gap-3">
+                    {spendingByCategory.map((row, i) => (
+                      <div key={row.name} className="card border-dashed">
+                        <div className="card-header pb-2">
+                          <div className="text-sm font-semibold">{row.name}</div>
+                        </div>
+                        <div className="card-content">
+                          <div className="text-xl font-semibold">{currency(row.value)}</div>
+                          <div className="h-2 bg-slate-100 rounded-full mt-2">
+                            <div
+                              className="h-2 rounded-full"
+                              style={{ width: Math.min(100, (row.value / 6000) * 100) + "%", backgroundColor: COLORS[i % COLORS.length] }}
+                            />
+                          </div>
+                          <div className="text-xs muted mt-1">Budget cap: {currency(6000)}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {tab === 'bills' && <BillList />}
+                {tab === 'calendar' && <CashflowCalendar />}
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      function SpendingSection() {
+        return (
+          <div className="space-y-6">
+            <SectionTitle icon={Icon.Receipt} title="Spending Management" subtitle="Track spends, get alerts, and cut waste." />
+            <div className="card">
+              <div className="card-header">
+                <div className="card-title flex items-center gap-2"><Icon.Bell /> Smart Alerts</div>
+              </div>
+              <div className="card-content grid md:grid-cols-3 gap-3">
+                <SmartAlert text="Spike in Food spends this week (+18%)." />
+                <SmartAlert text="3 subscriptions renew next week (₹899 total)." />
+                <SmartAlert text="Round-up savings ready: ₹126 to Micro Goals." />
+              </div>
+            </div>
+
+            <div className="card">
+              <div className="card-header">
+                <div className="card-title flex items-center gap-2"><Icon.Sparkles /> AI Insights</div>
+              </div>
+              <div className="card-content space-y-2 text-sm muted">
+                <p>🍵 Swap 2 café runs for home brews → save ~ {currency(480)} / week.</p>
+                <p>🚗 Take Metro twice this week → save ~ {currency(220)} and 1.2kg CO₂.</p>
+                <p>📦 Cancel idle subscription: "Stream+" (unused 45 days) → {currency(299)} / month.</p>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      function InvestmentSection() {
+        const total = investments.reduce((a, c) => a + c.value, 0);
+        return (
+          <div className="space-y-6">
+            <SectionTitle icon={Icon.TrendingUp} title="Investments" subtitle="Track and rebalance with simple nudges." />
+
+            <div className="grid lg:grid-cols-2 gap-4">
+              <div className="card">
+                <div className="card-header"><div className="card-title">Portfolio Split</div></div>
+                <div className="card-content h-60">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={investments}>
+                      <XAxis dataKey="name" />
+                      <YAxis />
+                      <Tooltip formatter={(v) => currency(v)} />
+                      <Bar dataKey="value" radius={[8,8,0,0]}>
+                        {investments.map((_, i) => (
+                          <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="card-footer text-sm muted">Total: <span className="font-semibold ml-1">{currency(total)}</span></div>
+              </div>
+
+              <div className="card">
+                <div className="card-header"><div className="card-title">Coach Tips</div></div>
+                <div className="card-content space-y-2 text-sm muted">
+                  <p>• Rebalance: Lower FD by 5%, add to index MFs for long-term growth.</p>
+                  <p>• SIP suggestion: {currency(3000)} / month → Nifty 50 index fund.</p>
+                  <p>• Rainy-day: keep {currency(60000)} in liquid funds (6 months expenses).</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      function GoalsSection() {
+        const progressData = goalTemplates.map((g) => ({ name: g.label, value: Math.round((g.saved / g.target) * 100) }));
+        return (
+          <div className="space-y-6">
+            <SectionTitle icon={Icon.Target} title="Micro Goals" subtitle="Tiny targets, big wins." />
+
+            <div className="grid lg:grid-cols-2 gap-4">
+              <div className="card">
+                <div className="card-header"><div className="card-title">Progress Radar</div></div>
+                <div className="card-content h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <RadialBarChart innerRadius="20%" outerRadius="90%" data={progressData}>
+                      <RadialBar minAngle={15} clockWise dataKey="value" />
+                      <Legend />
+                      <Tooltip formatter={(v) => \`\${v}%\`} />
+                    </RadialBarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+              <div className="card">
+                <div className="card-header"><div className="card-title">Create / Manage Goals</div></div>
+                <div className="card-content space-y-3">
+                  {goalTemplates.map((g, i) => (
+                    <div key={g.id} className="p-3 rounded-xl border flex items-center gap-4">
+                      <div className="w-28 text-sm">
+                        <div className="font-semibold">{g.label}</div>
+                        <div className="muted">{currency(g.saved)} / {currency(g.target)}</div>
+                      </div>
+                      <div className="h-2 flex-1 bg-slate-100 rounded-full">
+                        <div className="h-2 rounded-full" style={{ width: \`\${(g.saved / g.target) * 100}%\`, backgroundColor: COLORS[i % COLORS.length] }} />
+                      </div>
+                      <Button variant="secondary" className="ml-2 text-sm">Boost</Button>
+                    </div>
+                  ))}
+                  <div className="grid grid-cols-3 gap-2">
+                    <Input placeholder="Goal name" />
+                    <Input placeholder="Target (₹)" type="number" />
+                    <Button className="btn-primary"><Icon.Plus />&nbsp;Add</Button>
+                  </div>
+                  <p className="text-xs muted">Tip: Turn on round-ups to auto-fund goals with spare change.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      function CalendarSection() {
+        return (
+          <div className="space-y-6">
+            <SectionTitle icon={Icon.Calendar} title="Cashflow Calendar" subtitle="Paydays, bills, and goals in one view." />
+            <CashflowCalendar />
+          </div>
+        );
+      }
+
+      function SocialSection() {
+        return (
+          <div className="space-y-6">
+            <SectionTitle icon={Icon.Users} title="Social Saving" subtitle="Challenges with friends that actually save money." />
+
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {socialChallenges.map((c, i) => (
+                <div key={i} className="card">
+                  <div className="card-header">
+                    <div className="card-title flex items-center justify-between">
+                      <span>{c.name}</span>
+                      <span className="badge rounded-full">{c.members} joined</span>
+                    </div>
+                  </div>
+                  <div className="card-content">
+                    <div className="text-sm muted">Savings Pot: <span className="font-semibold">{currency(c.pot)}</span></div>
+                    <div className="h-2 bg-slate-100 rounded-full mt-3">
+                      <div className="h-2 rounded-full" style={{ width: \`\${c.progress * 100}%\`, backgroundColor: COLORS[i % COLORS.length] }} />
+                    </div>
+                  </div>
+                  <div className="card-footer">
+                    <Button className="w-full btn-primary">Join Challenge</Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      }
+
+      function CashMaintainedSection({ ledger, onAdd }) {
+        const balance = ledger.reduce((a, t) => a + (t.type === "in" ? t.amount : -t.amount), 0);
+        return (
+          <div className="space-y-6">
+            <SectionTitle icon={Icon.Coins} title="Cash Maintained" subtitle="Quick ledger for wallet & petty cash." />
+
+            <div className="grid md:grid-cols-3 gap-4">
+              <KPI label="Current Balance" value={currency(balance)} />
+              <KPI label="Inflow (30d)" value={currency(ledger.filter(l=>l.type==='in').reduce((a,c)=>a+c.amount,0))} />
+              <KPI label="Outflow (30d)" value={currency(ledger.filter(l=>l.type==='out').reduce((a,c)=>a+c.amount,0))} />
+            </div>
+
+            <div className="card">
+              <div className="card-header"><div className="card-title">Add Entry</div></div>
+              <div className="card-content grid sm:grid-cols-5 gap-2">
+                <div className="sm:col-span-2">
+                  <Label>Label</Label>
+                  <Input id="entry-label" placeholder="e.g., Uber refund / Groceries" />
+                </div>
+                <div className="sm:col-span-2">
+                  <Label>Amount (₹)</Label>
+                  <Input id="entry-amount" type="number" placeholder="500" />
+                </div>
+                <div className="sm:col-span-1 flex items-end gap-2">
+                  <Button className="w-full btn-primary" onClick={() => onAdd({ type: "in" })}><Icon.Plus />&nbsp;In</Button>
+                  <Button className="w-full btn-secondary" onClick={() => onAdd({ type: "out" })}>Out</Button>
+                </div>
+              </div>
+            </div>
+
+            <div className="card">
+              <div className="card-header"><div className="card-title">Recent Entries</div></div>
+              <div className="card-content space-y-2">
+                {ledger.length === 0 && <p className="text-sm muted">No entries yet. Add your first transaction above.</p>}
+                {ledger.map((t, i) => (
+                  <div key={i} className="flex items-center justify-between p-3 border rounded-xl">
+                    <div className="flex items-center gap-3">
+                      <span className={\`text-lg \${t.type==='in' ? 'text-emerald-600' : 'text-rose-600'}\`}>₹</span>
+                      <div>
+                        <div className="font-medium">{t.label}</div>
+                        <div className="text-xs muted">{new Date(t.date).toLocaleString("en-IN")}</div>
+                      </div>
+                    </div>
+                    <div className={\`font-semibold \${t.type === "in" ? "text-emerald-600" : "text-rose-600"}\`}>
+                      {t.type === "in" ? "+" : "-"}{currency(t.amount)}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      function SettingsSection() {
+        return (
+          <div className="space-y-6">
+            <SectionTitle icon={Icon.Settings} title="Settings" subtitle="Personalize your coach." />
+            <div className="card">
+              <div className="card-header"><div className="card-title">Preferences</div></div>
+              <div className="card-content grid md:grid-cols-3 gap-4">
+                <div className="flex items-center justify-between border rounded-xl p-3">
+                  <div>
+                    <div className="font-medium">Round-up Savings</div>
+                    <div className="text-xs muted">Spare change → goals</div>
+                  </div>
+                  <div className="switch"><span className="switch-dot translate-x-1"></span></div>
+                </div>
+                <div className="flex items-center justify-between border rounded-xl p-3">
+                  <div>
+                    <div className="font-medium">Spending Alerts</div>
+                    <div className="text-xs muted">Detect spikes & renewals</div>
+                  </div>
+                  <div className="switch"><span className="switch-dot translate-x-1"></span></div>
+                </div>
+                <div className="flex items-center justify-between border rounded-xl p-3">
+                  <div>
+                    <div className="font-medium">Dark Mode</div>
+                    <div className="text-xs muted">Auto at night</div>
+                  </div>
+                  <div className="switch"><span className="switch-dot"></span></div>
+                </div>
+              </div>
+            </div>
+
+            <div className="card">
+              <div className="card-header"><div className="card-title">Learning Hub</div></div>
+              <div className="card-content space-y-2 text-sm muted">
+                <p className="flex items-center gap-2"><Icon.Book /> SIP vs Lumpsum — what suits Gen Z cashflows?</p>
+                <p className="flex items-center gap-2"><Icon.Book /> How to read expense ratios in index funds.</p>
+                <p className="flex items-center gap-2"><Icon.Book /> Student credit cards without annual fees.</p>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      // ---------- Reusable blocks ----------
+      function QuickAdd({ cashBalance, onQuickAdd }) {
+        const [label, setLabel] = useState("");
+        const [amount, setAmount] = useState("");
+        return (
+          <div className="card">
+            <div className="card-header">
+              <div className="card-title flex items-center gap-2"><Icon.Plus /> Quick Add (affects Cash Maintained)</div>
+            </div>
+            <div className="card-content grid md:grid-cols-5 gap-2">
+              <div className="md:col-span-2">
+                <Label>Label</Label>
+                <Input value={label} onChange={(e)=>setLabel(e.target.value)} placeholder="e.g., Snack / Reimbursement" />
+              </div>
+              <div className="md:col-span-2">
+                <Label>Amount (₹)</Label>
+                <Input type="number" value={amount} onChange={(e)=>setAmount(e.target.value)} placeholder="200" />
+              </div>
+              <div className="md:col-span-1 flex items-end gap-2">
+                <Button className="w-full btn-primary" onClick={()=>{onQuickAdd({label, amount: Number(amount)||0, type:'in'}); setLabel(""); setAmount("");}}>In</Button>
+                <Button className="w-full btn-secondary" onClick={()=>{onQuickAdd({label, amount: Number(amount)||0, type:'out'}); setLabel(""); setAmount("");}}>Out</Button>
+              </div>
+            </div>
+            <div className="card-footer text-xs muted">Current cash: {currency(cashBalance)}</div>
+          </div>
+        );
+      }
+
+      function SmartAlert({ text }) {
+        return (
+          <div className="p-3 border rounded-xl flex items-center gap-2">
+            <Icon.Bell />
+            <span className="text-sm">{text}</span>
+          </div>
+        );
+      }
+
+      function BillList() {
+        const bills = [
+          { name: "Spotify Student", date: "15 Nov", amount: 59 },
+          { name: "Phone", date: "18 Nov", amount: 399 },
+          { name: "Wi‑Fi", date: "22 Nov", amount: 699 },
+        ];
+        return (
+          <div className="card">
+            <div className="card-header"><div className="card-title">Upcoming Bills</div></div>
+            <div className="card-content space-y-2">
+              {bills.map((b, i) => (
+                <div key={i} className="flex items-center justify-between p-3 border rounded-xl">
+                  <div className="flex items-center gap-3">
+                    <Icon.Receipt />
+                    <div>
+                      <div className="font-medium">{b.name}</div>
+                      <div className="text-xs muted">Due {b.date}</div>
+                    </div>
+                  </div>
+                  <div className="font-semibold">{currency(b.amount)}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      }
+
+      function CashflowCalendar() {
+        const days = Array.from({ length: 14 }).map((_, i) => {
+          const d = new Date();
+          d.setDate(d.getDate() + i);
+          return d;
+        });
+        const paydays = new Set([3, 10]);
+        const billOffsets = new Map([
+          [5, { name: "Wi‑Fi", amount: 699 }],
+          [8, { name: "Phone", amount: 399 }],
+        ]);
+
+        return (
+          <div className="grid grid-cols-2 md:grid-cols-7 gap-2">
+            {days.map((d, i) => {
+              const isPayday = paydays.has(i);
+              const bill = billOffsets.get(i);
+              return (
+                <div key={i} className="rounded-2xl p-3 border bg-white">
+                  <div className="text-xs muted">{d.toLocaleDateString("en-IN", { weekday: "short" })}</div>
+                  <div className="text-lg font-semibold">{d.getDate()}</div>
+                  {isPayday && (
+                    <span className="badge badge-emerald mt-2">Payday {currency(20000)}</span>
+                  )}
+                  {bill && (
+                    <span className="badge mt-2">Bill: {bill.name} {currency(bill.amount)}</span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        );
+      }
+
+      // ---------- Bottom Navigation ----------
+      const NAV = [
+        { key: "home", label: "Home", icon: Icon.Home },
+        { key: "money", label: "Money", icon: Icon.Wallet },
+        { key: "spending", label: "Spends", icon: Icon.Receipt },
+        { key: "invest", label: "Invest", icon: Icon.TrendingUp },
+        { key: "goals", label: "Goals", icon: Icon.PiggyBank },
+        { key: "calendar", label: "Calendar", icon: Icon.Calendar },
+        { key: "social", label: "Social", icon: Icon.Users },
+        { key: "cash", label: "Cash", icon: Icon.Coins },
+        { key: "settings", label: "Settings", icon: Icon.Settings },
+      ];
+
+      // ---------- Root App ----------
+      function FinBuddyApp() {
+        const [tab, setTab] = useState("home");
+        const [ledger, setLedger] = useState([
+          { type: "in", label: "Wallet Top-up", amount: 2000, date: Date.now() - 86400000 * 2 },
+          { type: "out", label: "Snacks", amount: 120, date: Date.now() - 86400000 * 2 },
+          { type: "out", label: "Auto", amount: 90, date: Date.now() - 86400000 * 1 },
+        ]);
+
+        const cashBalance = ledger.reduce((a, t) => a + (t.type === "in" ? t.amount : -t.amount), 0);
+
+        const onQuickAdd = (t) => {
+          if (!t || !t.label || !t.amount) return;
+          setLedger((prev) => [...prev, { ...t, date: Date.now() }]);
+        };
+
+        const onCashAdd = ({ type }) => {
+          const labelEl = document.getElementById("entry-label");
+          const amountEl = document.getElementById("entry-amount");
+          const label = labelEl?.value?.trim();
+          const amt = Number(amountEl?.value || 0);
+          if (!label || !amt) return;
+          setLedger((prev) => [...prev, { type, label, amount: amt, date: Date.now() }]);
+          if (labelEl) labelEl.value = "";
+          if (amountEl) amountEl.value = "";
+        };
+
+        return (
+          <div className="max-w-5xl mx-auto px-3 pb-24 pt-6">
+            <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
+              {/* Top header */}
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <div className="h-9 w-9 rounded-2xl bg-indigo-100 grid place-content-center">
+                    <Icon.PiggyBank />
+                  </div>
+                  <div>
+                    <h1 className="text-lg font-semibold">FinBuddy</h1>
+                    <p className="text-xs muted">Smart Financial Coach for Gen Z</p>
+                  </div>
+                </div>
+                <Button className="btn-secondary text-sm"><Icon.Sparkles />&nbsp;Ask Coach</Button>
+              </div>
+
+              {/* Section switcher */}
+              <div className="space-y-6">
+                {tab === "home" && <DashboardSection cashBalance={cashBalance} onQuickAdd={onQuickAdd} />}
+                {tab === "money" && <MoneyManagementSection />}
+                {tab === "spending" && <SpendingSection />}
+                {tab === "invest" && <InvestmentSection />}
+                {tab === "goals" && <GoalsSection />}
+                {tab === "calendar" && <CalendarSection />}
+                {tab === "social" && <SocialSection />}
+                {tab === "cash" && <CashMaintainedSection ledger={ledger} onAdd={onCashAdd} />}
+                {tab === "settings" && <SettingsSection />}
+              </div>
+            </motion.div>
+
+            {/* Bottom Nav */}
+            <nav className="fixed bottom-3 left-1/2 -translate-x-1/2 w-[min(100%-1rem,64rem)]">
+              <div className="bg-white/80 backdrop-blur border rounded-2xl shadow-lg px-2 py-1 grid grid-cols-9">
+                {NAV.map((n) => {
+                  const ActiveIcon = n.icon;
+                  const active = tab === n.key;
+                  return (
+                    <button
+                      key={n.key}
+                      onClick={() => setTab(n.key)}
+                      className={"flex flex-col items-center py-2 rounded-xl transition " + (active ? "text-indigo-600" : "text-slate-500 hover:text-slate-800")}
+                      aria-label={n.label}
+                    >
+                      <ActiveIcon />
+                      <span className="text-[10px] mt-1">{n.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </nav>
+          </div>
+        );
+      }
+
+      const root = ReactDOM.createRoot(document.getElementById('root'));
+      root.render(<FinBuddyApp />);
+    </script>
+  </body>
+</html>
